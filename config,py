@@ -1,0 +1,5 @@
+# config.py
+
+vk_group_id = "your_group_id"
+vk_group_token = "your_group_token"
+openai_api_key = "your_openai_api_key"
