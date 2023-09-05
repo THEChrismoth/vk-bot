@@ -1,5 +1,5 @@
 # config.py
 
-vk_group_id = "your_group_id"
-vk_group_token = "your_group_token"
+vk_group_id = "tcm_pw"
+vk_group_token = "vk1.a.LWZ4oNx1PFVmjGqWEal83WHLEioPVUppDY0zNDqR23HBVqFqhHtiKpI78HWn-d-EahZsXhGacqc5IUnJSGDbVXLFm5Dtjnz1L-cT54XT-d_qqUMjUCK7uJClVHE3D6VAwindWj7ot-0ZsHfEo8e0ejacKVbRAH7k3WdKOVpCCnqY-kTddDGr_rAv7gTQNiPux2ACk5SS64jWrSPnF2dZ0A"
 openai_api_key = "your_openai_api_key"
