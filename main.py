@@ -7,13 +7,13 @@ import sqlite3
 import numpy as np
 
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
-from config import group_id, vk_token, openai_api_key
+from config import group_id, vk_token, openai_api_key, admin_id
 
 # Устанавливаем токен OpenAI API
 openai.api_key = openai_api_key
 
 # Создаем сессию ВКонтакте
-vk_session = vk_api.VkApi(token=vk_token)
+vk_session = vk_api.VkApi(token = vk_token)
 vk = vk_session.get_api()
 
 # Создаем подключение к базе данных
@@ -43,6 +43,7 @@ def save_message(user_id, message_text):
 
     cursor.execute("INSERT INTO chat_history VALUES (?, ?)", (user_id, message_text))
     conn.commit()
+    
 # Функция для получения предыдущих сообщений пользователя из базы данных
 def get_previous_messages(user_id):
     cursor.execute("SELECT message_text FROM chat_history WHERE user_id=?", (user_id,))
@@ -87,15 +88,41 @@ def send_image(user_id, message):
         random_id=random.randint(1, 1000000)
     )
 
+# Функция для отправки картинки
+def send_picture(user_id, image_path):
+    upload = vk_api.VkUpload(vk)
+    photo = upload.photo_messages(image_path)
+    vk.messages.send(
+        user_id=user_id,
+        attachment= f'photo{photo[0]["owner_id"]}_{photo[0]["id"]}',
+        message='Привет! Я Вульфи – комбинированный ассистент, обладающий способностью генерировать изображения и проводить беседу. Чем могу помочь?',
+        random_id=random.randint(1, 1000000)
+    )
+
+#Функция поиска имени подписчика
+def get_username(user_id):
+    vk_session = vk_api.VkApi(token=vk_token)
+    vk = vk_session.get_api()
+    user = vk.users.get(user_ids=user_id)
+    first_name = user[0]['first_name']
+    last_name = user[0]['last_name']
+    return f"{first_name} {last_name}"
+
 # Функция для обработки входящих сообщений
 def process_message(event):
     user_id = event.obj.message['from_id']
     message_text = event.obj.message['text']
 
     # Если сообщение начинается с "начать", отправляем приветственное сообщение
-    if message_text.lower().startswith("начать"):
-        send_message(user_id, "Привет! Я готов помочь тебе. Чем я могу быть полезен?")
+    if message_text.lower().startswith("начать") or message_text.lower().startswith("кто ты") :
+        send_picture(user_id, 'wolf.png')
 
+    elif message_text.lower().startswith('переслать'):
+        user_name = get_username(user_id)
+        message = f"Сообщение от подписчика {user_name}: {message_text[9:]}"  # Заменяем "Переслать" на "Сообщение от подписчика"
+        send_message(admin_id, message)
+        
+        
     # Если запрос на прошлые сообщения
     elif message_text.lower().startswith("прошлые сообщения"):
         # Получаем предыдущие сообщения пользователя
