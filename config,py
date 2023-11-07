@@ -7,5 +7,4 @@ vk_token = 'You_token_Vk'
 # Указываем идентификатор группы VK
 group_id = You_id
 
-# Указываем идентификатор администратора группы VK
-admin_id = Admin_id
+
