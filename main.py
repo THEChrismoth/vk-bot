@@ -95,7 +95,7 @@ def send_picture(user_id, image_path):
     vk.messages.send(
         user_id=user_id,
         attachment= f'photo{photo[0]["owner_id"]}_{photo[0]["id"]}',
-        message='Привет! Я Вульфи – комбинированный ассистент, обладающий способностью генерировать изображения и проводить беседу. Чем могу помочь?',
+        message='you_massage',
         random_id=random.randint(1, 1000000)
     )
 
@@ -115,7 +115,7 @@ def process_message(event):
 
     # Если сообщение начинается с "начать", отправляем приветственное сообщение
     if message_text.lower().startswith("начать") or message_text.lower().startswith("кто ты") :
-        send_picture(user_id, 'wolf.png')
+        send_picture(user_id, 'you_immage.png')
 
     elif message_text.lower().startswith('переслать'):
         user_name = get_username(user_id)
