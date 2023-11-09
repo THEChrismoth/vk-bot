@@ -1,11 +1,14 @@
 # Устанавливаем токен OpenAI API
-openai_api_key = 'You_token_openai'
+openai_api_key = 'Твой_токен_на_openai'
 
 # Устанавливаем токен ВКонтакте API
-vk_token = 'You_token_Vk'
+vk_token = 'Твой_токен_на_Vk'
 
 # Указываем идентификатор группы VK
-group_id = You_id
+group_id = Id_группы
 
 # Указываем идентификатор администратора группы VK
-admin_id = You_admin_id
+admin_id = Id_администратора
+
+# Указываем индификатор openweathermap
+openweathermap_id = 'Твой_токен_на_openweathermap'
