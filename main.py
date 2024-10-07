@@ -1,205 +1,241 @@
 import vk_api
 import random
-import json
-import openai
-import random
-import sqlite3
 import asyncio
 import requests
+import json
+import time
+import base64
 import numpy as np
+import os
 
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
-from config import group_id, vk_token, openai_api_key, admin_id, openweathermap_id
 
-# Устанавливаем токен OpenAI API
-openai.api_key = openai_api_key
+from langchain.schema import HumanMessage, SystemMessage
+from langchain.chat_models.gigachat import GigaChat
+
+from config import (
+    group_id,
+    vk_token,
+    GigaChat_authorization,
+    admin_id,
+    openweathermap_id,
+    FB_api_key,
+    FB_api_secret_key,
+)
+
+# Авторизация в сервисе
+chat = GigaChat(
+    credentials=GigaChat_authorization,
+    verify_ssl_certs=False,
+)
 
 # Создаем сессию ВКонтакте
 vk_session = vk_api.VkApi(token=vk_token)
 vk = vk_session.get_api()
 
-# Создаем подключение к базе данных
-conn = sqlite3.connect('chat_history.db')
-cursor = conn.cursor()
+# Создаем глобальную переменную для блокирование работы
+global lock
+lock = asyncio.Lock()
 
-# Создаем таблицу для хранения переписки
-cursor.execute('''CREATE TABLE IF NOT EXISTS chat_history
-                  (user_id INTEGER, message_text TEXT)''')
-conn.commit()
+
+# Класс для работы с Fusion Brain Api
+class Text2ImageAPI:
+
+    def __init__(self, url, api_key, secret_key):
+        self.URL = url
+        self.AUTH_HEADERS = {
+            "X-Key": f"Key {api_key}",
+            "X-Secret": f"Secret {secret_key}",
+        }
+
+    def get_model(self):
+        response = requests.get(
+            self.URL + "key/api/v1/models", headers=self.AUTH_HEADERS
+        )
+        data = response.json()
+        return data[0]["id"]
+
+    def generate(self, prompt, model, images=1, width=1024, height=1024):
+        params = {
+            "type": "GENERATE",
+            "numImages": images,
+            "width": width,
+            "height": height,
+            "generateParams": {"query": f"{prompt}"},
+        }
+
+        data = {
+            "model_id": (None, model),
+            "params": (None, json.dumps(params), "application/json"),
+        }
+        response = requests.post(
+            self.URL + "key/api/v1/text2image/run",
+            headers=self.AUTH_HEADERS,
+            files=data,
+        )
+        data = response.json()
+        return data["uuid"]
+
+    def check_generation(self, request_id, attempts=10, delay=10):
+        while attempts > 0:
+            response = requests.get(
+                self.URL + "key/api/v1/text2image/status/" + request_id,
+                headers=self.AUTH_HEADERS,
+            )
+            data = response.json()
+            if data["status"] == "DONE":
+                return data["images"]
+
+            attempts -= 1
+            time.sleep(delay)
+
 
 # Функция для отправки сообщения ВКонтакте
 async def send_message(user_id, message):
-   vk.messages.send(
+    vk.messages.send(
         random_id=random.randint(1, 1000000),
         user_id=user_id,
         message=message,
     )
 
-# Функция для сохранения сообщения в базе данных
-async def save_message(user_id, message_text):
-    # Удаляем старые сообщения пользователя, если их количество превышает 3
-    cursor.execute(
-        f"""
-        DELETE FROM chat_history WHERE rowid IN (
-            SELECT rowid FROM chat_history WHERE user_id=? ORDER BY rowid LIMIT -1 OFFSET 2
-        )
-        """,
-        (user_id,)
+
+# Функция для отправки картинки
+async def send_picture(user_id, image_path, message):
+    upload = vk_api.VkUpload(vk)
+    photo = upload.photo_messages(os.path.join("images", image_path))
+    vk.messages.send(
+        user_id=user_id,
+        attachment=f'photo{photo[0]["owner_id"]}_{photo[0]["id"]}',
+        message=message,
+        random_id=random.randint(1, 1000000),
     )
 
-    cursor.execute("INSERT INTO chat_history VALUES (?, ?)", (user_id, message_text))
-    conn.commit()
 
-#получение погоды
-async def get_weather(user_id, city_name):   
+# Функция поиска имени подписчика
+async def get_username(user_id):
+    user_info = vk.users.get(user_ids=user_id, fields="screen_name")
+    username = (
+        f"@{user_info[0]['screen_name']}"
+        if "screen_name" in user_info[0]
+        else f"Пользователь с id {user_id}"
+    )
+    return username
+
+
+# Функция для генерации ответа с использованием GigaChat
+async def generate_response(chat, message_text):
+    messages = [HumanMessage(content=message_text)]
+    response = chat(messages)
+    return response.content
+
+
+# получение погоды
+async def get_weather(user_id, city_name):
     # Замените 'your_api_key' на ваш API-ключ OpenWeatherMap
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={openweathermap_id}&units=metric'
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={openweathermap_id}&units=metric"
 
     response = requests.get(url)
     data = response.json()
 
-    weather_description = data['weather'][0]['description']
-    temperature = data['main']['temp']
-    response_message = f"Погода в {city_name}: {weather_description}, Температура: {temperature}°C"
+    weather_description = data["weather"][0]["description"]
+    temperature = data["main"]["temp"]
+    response_message = (
+        f"Погода в {city_name}: {weather_description}, Температура: {temperature}°C"
+    )
 
     # Отправить сообщение с информацией о погоде пользователю user_id
     await send_message(user_id, response_message)
 
-    
-# Функция для получения предыдущих сообщений пользователя из базы данных
-async def get_previous_messages(user_id):
-    cursor.execute("SELECT message_text FROM chat_history WHERE user_id=?", (user_id,))
-    rows = cursor.fetchall()
-    previous_messages = []
-    for row in rows:
-        previous_messages.append({"role": "user", "content": row[0]})
-    return previous_messages
 
-# Функция для генерации ответа с использованием OpenAI GPT-3
-async def generate_response(previous_messages, message_text):
-    messages = previous_messages + [{"role": "user", "content": message_text}]
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messages
-    )
+# функция открытия файла
+async def read_file(file_path):
+    with open(os.path.join("tx", file_path), "r", encoding="utf-8") as f:
+        return f.read()
 
-    # Получаем ответ от модели GPT-3.5 Turbo
-    reply = response.choices[0].message.content
-
-    return reply    
-
-# Функция для генерации изображения с помощью OpenAI API
-async def generate_image(prompt):
-    response = openai.images.generate(
-        model="dall-e-3",
-        prompt=prompt,
-        n=1,
-        quality="standard",
-        size="1024x1024"
-    )
-    image_url = response.data[0].url
-
-    return image_url
-
-# Функция для отправки сообщения с изображением в VK
-async def send_image(user_id, message):
-    prompt = message.replace('нарисуй', 'генерировать изображение', 1)  # Замена первого вхождения "нарисуй" на "генерировать изображение"
-    image_url = await generate_image(prompt)
-    vk.messages.send(
-        user_id=user_id,
-        attachment=image_url,
-        message='Ваше сгенерированное изображение',
-        random_id=random.randint(1, 1000000)
-    )
-
-# Функция для отправки картинки
-async def send_picture(user_id, image_path):
-    upload = vk_api.VkUpload(vk)
-    photo = upload.photo_messages(image_path)
-    vk.messages.send(
-        user_id=user_id,
-        attachment= f'photo{photo[0]["owner_id"]}_{photo[0]["id"]}',
-        message='Твое приветственное сообщение',
-        random_id=random.randint(1, 1000000)
-    )
-
-#Функция поиска имени подписчика
-async def get_username(user_id):
-    user_info = vk.users.get(user_ids=user_id, fields='screen_name')
-    username = f"@{user_info[0]['screen_name']}" if 'screen_name' in user_info[0] else f"Пользователь с id {user_id}"
-    return username
 
 # Функция для обработки входящих сообщений
 async def process_message(event):
-    user_id = event.obj.message['from_id']
-    message_text = event.obj.message['text']
+    user_id = event.obj.message["from_id"]
+    message_text = event.obj.message["text"]
 
-    # Если сообщение начинается с "начать", отправляем приветственное сообщение
-    if message_text.lower().startswith("начать") or message_text.lower().startswith("кто ты") :
-        await send_picture(user_id, 'изображение.png')
+    if message_text.lower() == "начать" or message_text.lower().startswith("привет"):
+        message = await read_file("start.txt")
+        await send_picture(user_id, "wolf.png", message)
 
-    elif message_text.lower().startswith('команды') or message_text.lower().startswith("что ты умеешь") :
-        vk.messages.send(
-            random_id=random.randint(1, 1000000),
-            user_id=user_id,
-            message='Вот что я умею:\n\n-Начать - стартовое сообщение\n-Команды - список команд\n-Погода (название города) - прогноз погоды\n-Переслать (ваше сообщение) - переслать сообщение администратору\n-Нарисуй (ваша идея на английском) - генерация изображений\n\nВсе остальные сообщени распозноются как ChatGPt\n\nРад буду помочь)',
-        )   
+    elif message_text.lower().startswith("команды") or message_text.lower().startswith(
+        "что ты умеешь"
+    ):
+        message = await read_file("comand.txt")
+        await send_message(user_id, message)
 
-    elif message_text.lower().startswith('погода'):
-        words = message_text.split()
-        city_name = ' '.join(words[1:])  # Получаем все слова после "погода" как название города
+    elif message_text.lower().startswith("промокоды"):
+        message = await read_file("promo.txt")
+        await send_message(user_id, message)
+
+    elif message_text.lower().startswith("ивенты"):
+        message = await read_file("ivent.txt")
+        await send_message(user_id, message)
+
+    elif message_text.lower().startswith("полезные ссылки"):
+        message = await read_file("resources.txt")
+        await send_message(user_id, message)
+
+    elif message_text.lower().startswith("переслать"):
+        user_name = await get_username(user_id)
+        message = f"Сообщение от подписчика {user_name}: {message_text[9:]}"
+        await send_message(admin_id, message)
+
+    elif message_text.lower().startswith("погода"):
+        worlds = message_text.split()
+        city_name = " ".join(worlds[1:])
         await get_weather(user_id, city_name)
 
-    elif message_text.lower().startswith('переслать'):
-        user_name = await get_username(user_id)
-        message = f"Сообщение от подписчика {user_name}: {message_text[9:]}"  # Заменяем "Переслать" на "Сообщение от подписчика"
-        await send_message(admin_id, message)
-        
-    # Если запрос на прошлые сообщения
-    elif message_text.lower().startswith("прошлые сообщения"):
-        # Получаем предыдущие сообщения пользователя
-        previous_messages = await get_previous_messages(user_id)
-
-        # Отправляем предыдущие сообщения
-        for message in previous_messages:
-            await send_message(user_id, f"<{message['role']}> {message['content']}")
-
-    #Если просим нарисовать
     elif message_text.lower().startswith("нарисуй"):
-        await send_image(user_id, message_text)
+        worlds = message_text.split()
+        message_image = " ".join(worlds[1:])
+        async with lock:
+            api = Text2ImageAPI(
+                "https://api-key.fusionbrain.ai/",
+                FB_api_key,
+                FB_api_secret_key,
+            )
+            model_id = api.get_model()
+            uuid = api.generate(message_image, model_id)
+            images = api.check_generation(uuid)
+            image_base64 = images[0]
+            image_data = base64.b64decode(image_base64)
+            with open(os.path.join("images", "image.jpg"), "wb") as file:
+                file.write(image_data)
+            message = "Ваше изображение"
+            await send_picture(user_id, "image.jpg", message)
 
-    # Иначе сохраняем сообщение в базе данных и передаем его модели GPT-3.5 Turbo
-    else:
-        # Получаем предыдущие сообщения пользователя
-        previous_messages = await get_previous_messages(user_id)
+    elif message_text.lower().startswith("вульфи"):
+        Chad_join = message_text.split()
+        Chad_message = " ".join(Chad_join[1:])
+        async with lock:
+            reply = await generate_response(chat, Chad_message)
+            max_length = 4000
 
-        # Обрабатываем сообщение и формируем ответ с использованием OpenAI GPT-3
-        reply = await generate_response(previous_messages, message_text)
+            if len(reply) > max_length:
+                num_messages = len(reply) // max_length + 1
 
-        # Сохраняем ответ модели в базе данных
-        await save_message(user_id, reply)
+                for i in range(num_messages):
+                    start_index = i * max_length
+                    end_index = start_index + max_length
+                    message = reply[start_index:end_index]
+                    await send_message(user_id, message)
+            else:
+                await send_message(user_id, reply)
 
-        max_length = 4000
-
-        if len(reply) > max_length:
-            num_messages = len(reply) // max_length + 1
-
-            for i in range(num_messages):
-                start_index = i * max_length
-                end_index = start_index + max_length
-                message = reply[start_index:end_index]
-                await send_message(user_id, message)
-        else:
-            await send_message(user_id, reply)
 
 # Главная функция обработки событий
-async def main():  
+async def main():
     longpoll = VkBotLongPoll(vk_session, group_id)
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
-           await process_message(event)
+            await process_message(event)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
