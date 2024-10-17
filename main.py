@@ -1,5 +1,4 @@
 from vkbottle import Bot
-from handlers import labeler
 from config import api, labeler
 
 bot = Bot(

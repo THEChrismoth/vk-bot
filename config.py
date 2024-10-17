@@ -3,7 +3,7 @@ from vkbottle.bot import BotLabeler
 
 # Устанавливаем токен ВКонтакте API
 vk_token = "Твой_токен_на_Vk"
-api = API("vk_token")
+api = API(vk_token)
 labeler = BotLabeler()
 
 # Указываем идентификатор администратора группы VK

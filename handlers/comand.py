@@ -1,6 +1,6 @@
 from config import labeler, admin_id
-from reader import read_file
 from main import bot
+from reader import read_file
 
 from vkbottle.tools import PhotoMessageUploader
 from vkbottle.bot import Message
