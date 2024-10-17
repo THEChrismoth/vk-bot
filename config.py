@@ -2,7 +2,7 @@ from vkbottle import API
 from vkbottle.bot import BotLabeler
 
 # Устанавливаем токен ВКонтакте API
-vk_token = "vk_token"
+vk_token = "ваш токен"
 api = API(vk_token)
 labeler = BotLabeler()
 

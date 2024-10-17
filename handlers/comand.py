@@ -11,3 +11,9 @@ async def read_file(file_path):
 async def start(message):
     doc = await read_file("comand.txt")
     await message.answer(doc)
+
+
+@labeler.message(text="начать")
+async def start(message):
+    image_path = "images/wolf.png"
+    await message.answer(attachment=image_path)
