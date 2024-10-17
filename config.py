@@ -1,8 +1,10 @@
-# Указываем индификатор openweathermap
-openweathermap_id = 'Твой_токен_на_openweathermap'
+from vkbottle import API, BuiltinStateDispenser
+from vkbottle.bot import BotLabeler
 
 # Устанавливаем токен ВКонтакте API
 vk_token = 'Твой_токен_на_Vk'
+api = API("vk_token")
+labeler = BotLabeler()
 
 # Указываем идентификатор группы VK
 group_id = Id_группы
