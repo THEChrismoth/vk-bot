@@ -1,5 +1,5 @@
-from . import comand
+from . import comand, pong
 
-labelers = [comand.labeler]
+labelers = [comand.labeler, pong.labeler]
 
 __all__ = ["labelers"]
