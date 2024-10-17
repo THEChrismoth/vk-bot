@@ -1,7 +1,10 @@
 from vkbottle import Bot
-from .handlers import labelers
+from handlers import labeler
+from config import api, labeler
 
-for labeler in labelers:
-    bot.labeler.load(labeler)
+bot = Bot(
+    api=api,
+    labeler=labeler,
+)
 
 bot.run_forever()

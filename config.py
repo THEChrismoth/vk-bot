@@ -6,11 +6,11 @@ vk_token = "Твой_токен_на_Vk"
 api = API("vk_token")
 labeler = BotLabeler()
 
-# Указываем идентификатор группы VK
-group_id = "Id_группы"
-
 # Указываем идентификатор администратора группы VK
 admin_id = "Id_администратора"
+
+# Указываем идентификатор группы VK
+group_id = "Id_группы"
 
 # Указываем индификатор openweathermap
 openweathermap_id = "Твой_токен_на_openweathermap"
