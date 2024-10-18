@@ -9,18 +9,18 @@ async def start(message):
 
 
 @labeler.message(text="Промокоды")
-async def start(message):
+async def promo(message):
     doc = await read_file("promo.txt")
     await message.answer(doc)
 
 
 @labeler.message(text="Ивенты")
-async def start(message):
+async def ivent(message):
     doc = await read_file("ivent.txt")
     await message.answer(doc)
 
 
 @labeler.message(text="Полезные ссылки")
-async def start(message):
+async def resources(message):
     doc = await read_file("resources.txt")
     await message.answer(doc)
