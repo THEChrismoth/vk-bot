@@ -1,5 +1,9 @@
-from . import comand, upload
+from . import doc_comand, state_comand, upload_comand
 
-labelers = [comand.labeler, upload.labeler]
+labelers = [
+    doc_comand.labeler,
+    state_comand.labeler,
+    upload_comand.labeler,
+]
 
 __all__ = ["labelers"]

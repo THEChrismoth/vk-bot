@@ -6,7 +6,7 @@ from functions.read import read_file
 photo_uploader = PhotoMessageUploader(bot.api)
 
 
-@labeler.message(text="photo")
+@labeler.message(text="Начать")
 async def Photo_upload(message):
     doc = await read_file("start.txt")
     photo = await photo_uploader.upload(
