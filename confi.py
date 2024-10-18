@@ -1,17 +1,17 @@
 # Указываем индификатор openweathermap
-openweathermap_id = 'Твой_токен_на_openweathermap'
+openweathermap_id = "Твой_токен_на_openweathermap"
 
 # Устанавливаем токен ВКонтакте API
-vk_token = 'Твой_токен_на_Vk'
+vk_token = "Твой_токен_на_Vk"
 
 # Указываем идентификатор группы VK
-group_id = Id_группы
+group_id = "Id_группы"
 
 # Указываем идентификатор администратора группы VK
-admin_id = Id_администратора
+admin_id = "Id_администратора"
 
 # Указываем индификатор openweathermap
-openweathermap_id = 'Твой_токен_на_openweathermap'
+openweathermap_id = "Твой_токен_на_openweathermap"
 
 # Указываем авторизационные данные GigaChat
 GigaChat_authorization = "Твой_токен_на_GigaChat"
