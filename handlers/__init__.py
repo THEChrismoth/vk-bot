@@ -1,5 +1,5 @@
-from . import comand, pong
+from . import comand, upload
 
-labelers = [comand.labeler, pong.labeler]
+labelers = [comand.labeler, upload.labeler]
 
 __all__ = ["labelers"]

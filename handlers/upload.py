@@ -1,13 +1,16 @@
+from config import labeler
+from bot import bot
 from vkbottle import PhotoMessageUploader
-from main import bot
+from functions.read import read_file
 
 photo_uploader = PhotoMessageUploader(bot.api)
 
 
-@bot.on.message(text="photo")
+@labeler.message(text="photo")
 async def Photo_upload(message):
+    doc = await read_file("start.txt")
     photo = await photo_uploader.upload(
         file_source="images/wolf.png",
         peer_id=message.peer_id,
     )
-    await message.answer(attachment=photo)
+    await message.answer(doc, attachment=photo)
