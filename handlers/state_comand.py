@@ -1,9 +1,10 @@
-from config import labeler, admin_id, GigaChat_authorization
+from config import labeler, admin_id, GPT_key
 from bot import bot
 from vkbottle import BaseStateGroup, CtxStorage
 
-from langchain.schema import HumanMessage
-from langchain.chat_models.gigachat import GigaChat
+from httpx import AsyncClient
+
+from openai import AsyncOpenAI
 
 
 # Определяем состояния
@@ -14,17 +15,21 @@ class States(BaseStateGroup):
 
 ctx_storage = CtxStorage()
 
-# Авторизация в сервисе
-chat = GigaChat(
-    credentials=GigaChat_authorization,
-    verify_ssl_certs=False,
+
+# Создаем экземпляр клиента OpenAI с использованием прокси и базы данных
+gpt = AsyncOpenAI(
+    api_key=GPT_key,
+    base_url="https://api.proxyapi.ru/openai/v1",
+    http_client=AsyncClient(),
 )
 
 
-async def generate_response(chat, message_text):
-    messages = [HumanMessage(content=message_text)]
-    response = chat(messages)
-    return response.content
+# Функция для получения ответов от модели GPT
+async def gpt_request(text):
+    response = await gpt.chat.completions.create(
+        model="gpt-3.5-turbo", messages=[{"role": "user", "content": str(text)}]
+    )
+    return response
 
 
 @labeler.message(text="Переслать")
@@ -55,11 +60,9 @@ async def start_forwarding(message):
 
 @labeler.message(state=States.WAITING_FOR_REQUEST)
 async def message_to_forward(message):
-    # Получаем текст сообщения
-    remaining_text = message.text
-    answer = await generate_response(chat, remaining_text)
+    answer = await gpt_request(message.text)
 
-    await message.answer(answer)
+    await message.answer(answer.choices[0].message.content)
 
     # Возвращаем пользователя в начальное состояние
     await bot.state_dispenser.delete(message.peer_id)

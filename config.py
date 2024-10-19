@@ -9,5 +9,5 @@ labeler = BotLabeler()
 # Указываем идентификатор администратора группы VK
 admin_id = "ид"
 
-# Указываем авторизационные данные GigaChat
-GigaChat_authorization = "токен"
+# Указываем авторизационные данные OpenAI
+GPT_key = "токен"
