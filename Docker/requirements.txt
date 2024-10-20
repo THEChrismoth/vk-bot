@@ -1,6 +1,0 @@
-vk_api
-requests
-langchain
-langchain-community
-asyncio
-GigaChat

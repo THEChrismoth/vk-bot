@@ -1,23 +1,13 @@
-# Указываем индификатор openweathermap
-openweathermap_id = "Твой_токен_на_openweathermap"
+from vkbottle import API
+from vkbottle.bot import BotLabeler
 
 # Устанавливаем токен ВКонтакте API
-vk_token = "Твой_токен_на_Vk"
-
-# Указываем идентификатор группы VK
-group_id = "Id_группы"
+vk_token = "токен вк"
+api = API(vk_token)
+labeler = BotLabeler()
 
 # Указываем идентификатор администратора группы VK
-admin_id = "Id_администратора"
+admin_id = "ваш ид"
 
-# Указываем индификатор openweathermap
-openweathermap_id = "Твой_токен_на_openweathermap"
-
-# Указываем авторизационные данные GigaChat
-GigaChat_authorization = "Твой_токен_на_GigaChat"
-
-# Указываем апи ключ фьюжен брейн
-FB_api_key = "You_api_key"
-
-# Указываем секретный ключ фьюжен брейн
-FB_api_secret_key = "You_secret_key"
+# Указываем авторизационные данные OpenAI
+GPT_key = "ключ гпт"
