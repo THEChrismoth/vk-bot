@@ -5,6 +5,8 @@ from functions.read import read_file
 
 photo_uploader = PhotoMessageUploader(bot.api)
 
+labeler.vbml_ignore_case = True
+
 
 @labeler.message(text="Начать")
 async def Photo_upload(message):

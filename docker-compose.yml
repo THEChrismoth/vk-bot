@@ -1,9 +1,8 @@
 version: '3'
 services:
-  bot:
+  vkbot:
+    container_name: vkbot
     build: .
-    environment:
-      - CONFIG_FILE=config.py
-    restart: always
     ports:
-      - 8080:8080
+      - '80:80'
+    restart: always

@@ -14,6 +14,8 @@ class States(BaseStateGroup):
 
 ctx_storage = CtxStorage()
 
+labeler.vbml_ignore_case = True
+
 
 @labeler.message(text="Переслать")
 async def start_forwarding(message):

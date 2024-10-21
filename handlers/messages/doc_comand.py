@@ -1,6 +1,8 @@
 from config import labeler
 from functions.read import read_file
 
+labeler.vbml_ignore_case = True
+
 
 @labeler.message(text="Команды")
 async def start(message):
