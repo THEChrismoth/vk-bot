@@ -18,6 +18,7 @@ async def gpt_request(prompt):
     return response
 
 
+# Функция для получения изображений от модели GPT
 async def gpt_image(prompt):
     response = await gpt.images.generate(
         prompt=prompt, n=1, size="1024x1024", model="dall-e-3"

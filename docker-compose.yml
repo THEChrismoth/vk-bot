@@ -1,8 +1,26 @@
-version: '3'
 services:
-  vkbot:
-    container_name: vkbot
-    build: .
+  app:
+    build: ./app
+    volumes:
+      - ./app:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://thechrismoth:ig7thahZ@db:5432/wulfydatabase
+      - TZ=Europe/Moscow
     ports:
-      - '80:80'
+      - '8000:8000'
     restart: always
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: wulfydatabase
+      POSTGRES_USER: thechrismoth
+      POSTGRES_PASSWORD: ig7thahZ
+    ports:
+      - '5438:5432'
+    restart: always
+
+volumes:
+  db_data:
