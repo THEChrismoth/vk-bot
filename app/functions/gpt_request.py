@@ -24,3 +24,4 @@ async def gpt_image(prompt):
         prompt=prompt, n=1, size="1024x1024", model="dall-e-3"
     )
     return response
+
