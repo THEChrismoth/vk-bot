@@ -41,7 +41,7 @@ async def message_to_forward(message):
 
 
 # Хендлер для создания состояния ожидания запроса к нейросети
-@labeler.message(text="Вульфи")
+@labeler.message(text="Включить")
 async def start_forwarding(message):
     await message.answer("Напишите ваш запрос нейросети")
     await bot.state_dispenser.set(message.peer_id, States.WAITING_FOR_REQUEST)
@@ -50,12 +50,15 @@ async def start_forwarding(message):
 # Хендлер для отправки ответа нейросети пользователю состояния ожидания запроса
 @labeler.message(state=States.WAITING_FOR_REQUEST)
 async def message_to_forward(message):
-    answer = await gpt_request(message.text)
+    if message.text == "Выключить":
+        # Возвращаем пользователя в начальное состояние
+        await bot.state_dispenser.delete(message.peer_id)
 
-    await message.answer(answer.choices[0].message.content)
+        await message.answer("Вы вышли из режима нейросети")
+    else:
+        answer = await gpt_request(message.text)
 
-    # Возвращаем пользователя в начальное состояние
-    await bot.state_dispenser.delete(message.peer_id)
+        await message.answer(answer.choices[0].message.content)
 
 
 # Хендлер для создания состояния ожидания запроса для рисовки изображения
