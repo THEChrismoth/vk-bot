@@ -6,7 +6,7 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgresql://thechrismoth:ig7thahZ@db:5432/wulfydatabase
+      - DATABASE_URL=postgresql://логин_бд:пароль_бд@db:5432/имя_бд
       - TZ=Europe/Moscow
     ports:
       - '8000:8000'
@@ -15,9 +15,9 @@ services:
   db:
     image: postgres:latest
     environment:
-      POSTGRES_DB: wulfydatabase
-      POSTGRES_USER: thechrismoth
-      POSTGRES_PASSWORD: ig7thahZ
+      POSTGRES_DB: имя_бд
+      POSTGRES_USER: логин_бд
+      POSTGRES_PASSWORD: пароль_бд
     ports:
       - '5438:5432'
     restart: always
